@@ -15,6 +15,7 @@ contract IndexCDP is ReentrancyGuard, Ownable {
         uint256 debtAmount;
         uint256 lastInteractionTime; // Keeping track of the last interaction for interest calculation
     }
+    uint256 public constant minimumCollateralAmount = 4500;
 
     mapping(address => CDP) public cdps;
 

@@ -4,85 +4,73 @@ pragma solidity ^0.8.0;
 import "./IndexCDP.sol";
 
 contract SP500CDP is IndexCDP {
-    uint256 public SP500_COLLATERALIZATION_RATIO;
-    uint256 public SP500_LIQUIDATION_THRESHOLD;
-    uint256 public SP500_STABILITY_FEE;
-    uint256 public minDebtTokenAmount;
+    uint256 public SP500CollateralizationRatio;
+    uint256 public SP500LiquidationThreshold;
+    uint256 public SP500StabilityFee;
+
+    event SP500ParametersUpdated(
+        uint256 collateralizationRatio,
+        uint256 liquidationThreshold,
+        uint256 stabilityFee
+    );
 
     constructor(
         address _collateralToken,
-        address _debtToken,
         uint256 _minimumCollateralAmount,
-        uint256 _SP500_COLLATERALIZATION_RATIO,
-        uint256 _SP500_LIQUIDATION_THRESHOLD,
-        uint256 _SP500_STABILITY_FEE
+        uint256 _SP500CollateralizationRatio,
+        uint256 _SP500LiquidationThreshold,
+        uint256 _SP500StabilityFee
     )
         IndexCDP(
             _collateralToken,
-            _debtToken,
             _minimumCollateralAmount,
-            (_SP500_COLLATERALIZATION_RATIO * _minimumCollateralAmount) / 100 // Assuming the threshold is a percentage
+            _SP500LiquidationThreshold
         )
     {
-        SP500_COLLATERALIZATION_RATIO = _SP500_COLLATERALIZATION_RATIO;
-        SP500_LIQUIDATION_THRESHOLD = _SP500_LIQUIDATION_THRESHOLD;
-        SP500_STABILITY_FEE = _SP500_STABILITY_FEE;
+        SP500CollateralizationRatio = _SP500CollateralizationRatio;
+        SP500LiquidationThreshold = _SP500LiquidationThreshold;
+        SP500StabilityFee = _SP500StabilityFee;
     }
 
-    // Override functions from IndexCDP with specific logic for S&P 500, if necessary
     function createCDP(uint256 collateralAmount) public override {
-        super.createCDP(collateralAmount);
-        // Additional custom logic for S&P 500 CDP creation
-    }
-
-    function setMinDebtTokenAmount(uint256 _minDebtTokenAmount)
-        external
-        onlyOwner
-    {
+        // Custom logic for S&P 500 CDP creation
         require(
-            _minDebtTokenAmount > 0,
-            "Minimum debt token amount must be positive"
+            collateralAmount >= minimumCollateralAmount,
+            "Collateral is too low"
         );
-        minDebtTokenAmount = _minDebtTokenAmount;
+        uint256 debtAmount = calculateSP500DebtAmount(collateralAmount);
+
+        cdps[msg.sender] = CDP(collateralAmount, debtAmount, block.timestamp);
+        emit CDPCreated(msg.sender, collateralAmount, debtAmount);
     }
 
-    function liquidateCDP(address cdpOwner) public override {
-        // Custom liquidation logic for S&P 500 CDPs
-        // This might include a different calculation for determining whether a CDP should be liquidated, based on SP500_LIQUIDATION_THRESHOLD
-        require(
-            isSubjectToLiquidation(cdpOwner),
-            "CDP is not subject to liquidation"
-        );
-        // Additional custom logic for liquidation
-        // ...
-        emit CDPLiquidated(cdpOwner);
-    }
-
-    function calculateDebtAmount(uint256 collateralAmount)
+    function calculateSP500DebtAmount(uint256 collateralAmount)
         internal
         view
-        override
         returns (uint256)
     {
-        uint256 calculatedDebtAmount = (collateralAmount *
-            SP500_COLLATERALIZATION_RATIO) / 100;
-        // Ensure the calculated debt amount is not below the minimum threshold
-        if (calculatedDebtAmount < minDebtTokenAmount) {
-            return minDebtTokenAmount;
-        }
-        return calculatedDebtAmount;
+        // Implement specific debt calculation logic for SP500
+        return (collateralAmount * SP500CollateralizationRatio) / 100;
     }
 
     function setSP500Parameters(
         uint256 newCollateralizationRatio,
         uint256 newLiquidationThreshold,
         uint256 newStabilityFee
-    ) external onlyOwner {
-        SP500_COLLATERALIZATION_RATIO = newCollateralizationRatio;
-        SP500_LIQUIDATION_THRESHOLD = newLiquidationThreshold;
-        SP500_STABILITY_FEE = newStabilityFee;
-        liquidationThreshold = newLiquidationThreshold; // Update inherited threshold
+    ) external onlyRole(CDP_MANAGER_ROLE) {
+        SP500CollateralizationRatio = newCollateralizationRatio;
+        SP500LiquidationThreshold = newLiquidationThreshold;
+        SP500StabilityFee = newStabilityFee;
+        emit SP500ParametersUpdated(
+            newCollateralizationRatio,
+            newLiquidationThreshold,
+            newStabilityFee
+        );
     }
 
-    // Other custom functions and overrides...
+    // Override other necessary functions from IndexCDP as needed
+    // ...
+
+    // Implement any additional functions specific to SP500CDP
+    // ...
 }

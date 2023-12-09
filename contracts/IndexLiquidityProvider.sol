@@ -2,55 +2,66 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./SP500CDP.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "./IndexCDP.sol";
 
-contract IndexLiquidityProvider {
+contract LiquidityProvider {
+    IndexCDP public cdpContract;
     IERC20 public usdcToken;
-    SP500CDP public sp500cdp;
-    IERC20 public sp500Token; // This is the ERC20 token representing SP500 tokens
+    IERC20 public phxToken;
+    IUniswapV2Router02 public uniswapRouter;
 
-    // The constructor initializes the contract with the addresses of the USDC token, SP500 CDP contract, and SP500 token
+    // Constructor
     constructor(
+        address _cdpContract,
         address _usdcToken,
-        address _sp500cdp,
-        address _sp500Token
+        address _phxToken,
+        address _uniswapRouter
     ) {
+        cdpContract = IndexCDP(_cdpContract);
         usdcToken = IERC20(_usdcToken);
-        sp500cdp = SP500CDP(_sp500cdp);
-        sp500Token = IERC20(_sp500Token);
+        phxToken = IERC20(_phxToken);
+        uniswapRouter = IUniswapV2Router02(_uniswapRouter);
     }
 
-    // Function for a user to deposit USDC and receive SP500 tokens
-    function depositAndMintSP500(uint256 usdcAmount) external {
+    // Function to deposit USDC and mint PHX tokens
+    function depositAndMint(uint256 usdcAmount) external {
         require(
             usdcToken.transferFrom(msg.sender, address(this), usdcAmount),
-            "Transfer failed"
+            "USDC transfer failed"
         );
 
-        // Interact with the SP500 CDP contract to deposit collateral and mint SP500 tokens
-        usdcToken.approve(address(sp500cdp), usdcAmount);
-        sp500cdp.createCDP(usdcAmount);
+        // Mint PHX tokens equivalent to the USDC deposited
+        // Assuming 1 USDC = 1 PHX for simplicity
+        cdpContract.mintPHX(address(this), usdcAmount);
 
-        // The SP500 CDP contract would handle the minting of SP500 tokens and send them to this contract
-        // Then, this contract would transfer the SP500 tokens to the user
-        uint256 sp500Amount = calculateSP500Amount(usdcAmount); // Implement this function based on your system's logic
-        require(
-            sp500Token.transfer(msg.sender, sp500Amount),
-            "SP500 token transfer failed"
+        // Add liquidity to AMM
+        _addLiquidityToAMM(usdcAmount, usdcAmount);
+    }
+
+    // Private function to add liquidity to Uniswap
+    function _addLiquidityToAMM(uint256 usdcAmount, uint256 phxAmount) private {
+        usdcToken.approve(address(uniswapRouter), usdcAmount);
+        phxToken.approve(address(uniswapRouter), phxAmount);
+
+        uniswapRouter.addLiquidity(
+            address(usdcToken),
+            address(phxToken),
+            usdcAmount,
+            phxAmount,
+            0, // slippage management
+            0, // slippage management
+            msg.sender, // liquidity tokens sent to the user
+            block.timestamp + 15 // deadline
         );
     }
 
-    // Function to calculate the amount of SP500 tokens to mint based on the deposited USDC
-    function calculateSP500Amount(uint256 usdcAmount)
-        public
-        view
-        returns (uint256)
-    {
-        // Implement your logic here, possibly involving the SP500CDP contract's logic
-        // For example, it might depend on the current price of the SP500 index
-        uint256 sp500Price = sp500cdp.getLatestPrice();
-        return usdcAmount / sp500Price;
+    // Function to withdraw liquidity from AMM
+    function withdrawLiquidity(uint256 liquidity) external {
+        // Implement logic to remove liquidity from AMM and return assets to the user
+        // ...
     }
 
-    // Additional functions to handle withdrawing collateral, repaying debt, etc.
+    // Other utility functions as needed
+    // ...
 }

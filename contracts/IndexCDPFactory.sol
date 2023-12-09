@@ -4,48 +4,46 @@ pragma solidity ^0.8.0;
 import "./IndexCDP.sol";
 import "./SP500CDP.sol";
 
-// Import other specific CDP contracts as needed
+contract IndexCDPFactory is Ownable {
+    event IndexCDPDeployed(address indexed cdpContract, string indexType);
 
-contract IndexCDPFactory {
-    // Event to log the creation of a new CDP contract
-    event CDPContractCreated(
-        address indexed cdpContractAddress,
-        address indexed creator
-    );
-
-    // Function to create a new Index CDP contract
-    function createIndexCDP(
-        address priceFeed,
+    // Function to deploy a generic IndexCDP contract
+    function deployIndexCDP(
         address collateralToken,
-        address debtToken,
-        uint256 minimumCollateralAmount
-    ) external returns (address) {
+        uint256 minimumCollateralAmount,
+        uint256 liquidationThreshold
+    ) external onlyOwner returns (address) {
         IndexCDP cdp = new IndexCDP(
-            priceFeed,
             collateralToken,
-            debtToken,
-            minimumCollateralAmount
+            minimumCollateralAmount,
+            liquidationThreshold
         );
-        emit CDPContractCreated(address(cdp), msg.sender);
+        emit IndexCDPDeployed(address(cdp), "Generic");
         return address(cdp);
     }
 
-    // Function to create a new S&P 500 CDP contract
-    function createSP500CDP(
-        address priceFeed,
+    // Function to deploy a specific SP500CDP contract
+    function deploySP500CDP(
         address collateralToken,
-        address debtToken,
-        uint256 minimumCollateralAmount
-    ) external returns (address) {
-        SP500CDP cdp = new SP500CDP(
-            priceFeed,
+        uint256 minimumCollateralAmount,
+        uint256 SP500CollateralizationRatio,
+        uint256 SP500LiquidationThreshold,
+        uint256 SP500StabilityFee
+    ) external onlyOwner returns (address) {
+        SP500CDP sp500Cdp = new SP500CDP(
             collateralToken,
-            debtToken,
-            minimumCollateralAmount
+            minimumCollateralAmount,
+            SP500CollateralizationRatio,
+            SP500LiquidationThreshold,
+            SP500StabilityFee
         );
-        emit CDPContractCreated(address(cdp), msg.sender);
-        return address(cdp);
+        emit IndexCDPDeployed(address(sp500Cdp), "SP500");
+        return address(sp500Cdp);
     }
 
-    // Add more functions to create other specific types of CDPs as necessary
+    // Add more deployment functions for other specific types of Index CDPs if needed
+    // ...
+
+    // Any additional factory management functions can go here
+    // ...
 }

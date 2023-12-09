@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./oracles/PriceFeedOracle.sol";
+import "./interfaces/IIndexCDP.sol";
+import "./libraries/CDPHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Mintable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract IndexCDP is ReentrancyGuard, Ownable {
+contract IndexCDP is ReentrancyGuard, AccessControl {
     IERC20 public collateralToken;
-    IERC20Mintable public debtToken; // Assuming your PHX token has minting capabilities
-    IPriceFeedOracle public priceOracle;
+
+    // Define a role for managing the CDP
+    bytes32 public constant CDP_MANAGER_ROLE = keccak256("CDP_MANAGER_ROLE");
+
     struct CDP {
         uint256 collateralAmount;
         uint256 debtAmount;
-        uint256 lastInteractionTime; // Keeping track of the last interaction for interest calculation
+        uint256 lastInteractionTime;
     }
-    uint256 public constant minimumCollateralAmount = 4500;
 
     mapping(address => CDP) public cdps;
 
-    uint256 public minimumCollateralAmount; // Define a minimum collateral amount
-    uint256 public liquidationThreshold; // The threshold at which a CDP is subject to liquidation
+    uint256 public minimumCollateralAmount;
+    uint256 public liquidationThreshold;
 
     event CDPCreated(address indexed owner, uint256 collateral, uint256 debt);
     event CDPUpdated(address indexed owner, uint256 collateral, uint256 debt);
@@ -28,14 +31,15 @@ contract IndexCDP is ReentrancyGuard, Ownable {
 
     constructor(
         address _collateralToken,
-        address _debtToken,
         uint256 _minimumCollateralAmount,
         uint256 _liquidationThreshold
     ) {
         collateralToken = IERC20(_collateralToken);
-        debtToken = IERC20Mintable(_debtToken);
         minimumCollateralAmount = _minimumCollateralAmount;
         liquidationThreshold = _liquidationThreshold;
+
+        // Setup CDP manager role
+        _setupRole(CDP_MANAGER_ROLE, msg.sender);
     }
 
     function createCDP(uint256 collateralAmount) external nonReentrant {
@@ -43,6 +47,7 @@ contract IndexCDP is ReentrancyGuard, Ownable {
             collateralAmount >= minimumCollateralAmount,
             "Collateral is too low"
         );
+
         collateralToken.transferFrom(
             msg.sender,
             address(this),
@@ -50,25 +55,36 @@ contract IndexCDP is ReentrancyGuard, Ownable {
         );
 
         uint256 debtAmount = calculateDebtAmount(collateralAmount);
-        cdps[msg.sender] = CDP({
-            collateralAmount: collateralAmount,
-            debtAmount: debtAmount,
-            lastInteractionTime: block.timestamp
-        });
+        cdps[msg.sender] = CDP(collateralAmount, debtAmount, block.timestamp);
 
-        debtToken.mint(msg.sender, debtAmount);
         emit CDPCreated(msg.sender, collateralAmount, debtAmount);
     }
 
-    // Implement other functions such as addCollateral, removeCollateral, borrowDebt, repayDebt based on your system's logic
+    // Additional functions like addCollateral, removeCollateral, borrowDebt, repayDebt
 
     function calculateDebtAmount(uint256 collateralAmount)
         internal
         view
         returns (uint256)
     {
-        // Implement your system's logic to calculate debt amount based on the collateral
+        // Implement debt calculation logic
         return collateralAmount * 2; // Example logic
+    }
+
+    function liquidateCDP(address cdpOwner) external nonReentrant {
+        require(
+            hasRole(CDP_MANAGER_ROLE, msg.sender),
+            "Caller is not a CDP manager"
+        );
+        require(
+            isSubjectToLiquidation(cdpOwner),
+            "CDP is not subject to liquidation"
+        );
+
+        // Implement liquidation logic
+        // ...
+
+        emit CDPLiquidated(cdpOwner);
     }
 
     function isSubjectToLiquidation(address cdpOwner)
@@ -77,34 +93,7 @@ contract IndexCDP is ReentrancyGuard, Ownable {
         returns (bool)
     {
         CDP memory cdp = cdps[cdpOwner];
-        // Replace this with your system's logic to check for under-collateralization
+        // Implement liquidation check
         return cdp.collateralAmount * liquidationThreshold < cdp.debtAmount;
-    }
-
-    function liquidateCDP(address cdpOwner) external nonReentrant {
-        require(
-            isSubjectToLiquidation(cdpOwner),
-            "CDP is not subject to liquidation"
-        );
-        // Add logic for liquidation
-        // ...
-
-        emit CDPLiquidated(cdpOwner);
-    }
-
-    // Remove setPriceFeed function since Chainlink price feed is no longer used
-
-    modifier cdpExists(address cdpOwner) {
-        require(cdps[cdpOwner].collateralAmount > 0, "CDP does not exist");
-        _;
-    }
-
-    // Owner can update the liquidation threshold
-    function updateLiquidationThreshold(uint256 _newThreshold)
-        external
-        onlyOwner
-    {
-        require(_newThreshold > 0, "Threshold must be positive");
-        liquidationThreshold = _newThreshold;
     }
 }

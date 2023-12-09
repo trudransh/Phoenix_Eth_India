@@ -1,67 +1,55 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IndexCDP.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import "./IndexCDP.sol";
 
 contract LiquidityProvider {
-    IndexCDP public cdpContract;
+    IndexCDP public indexCDP;
     IERC20 public usdcToken;
     IERC20 public phxToken;
     IUniswapV2Router02 public uniswapRouter;
 
-    // Constructor
     constructor(
-        address _cdpContract,
-        address _usdcToken,
-        address _phxToken,
-        address _uniswapRouter
+        address _indexCDPAddress,
+        address _usdcTokenAddress,
+        address _phxTokenAddress,
+        address _uniswapRouterAddress
     ) {
-        cdpContract = IndexCDP(_cdpContract);
-        usdcToken = IERC20(_usdcToken);
-        phxToken = IERC20(_phxToken);
-        uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        indexCDP = IndexCDP(_indexCDPAddress);
+        usdcToken = IERC20(_usdcTokenAddress);
+        phxToken = IERC20(_phxTokenAddress);
+        uniswapRouter = IUniswapV2Router02(_uniswapRouterAddress);
     }
 
-    // Function to deposit USDC and mint PHX tokens
-    function depositAndMint(uint256 usdcAmount) external {
-        require(
-            usdcToken.transferFrom(msg.sender, address(this), usdcAmount),
-            "USDC transfer failed"
-        );
+    function depositUSDCAndMintPHX(uint256 usdcAmount) external {
+        require(usdcToken.transferFrom(msg.sender, address(this), usdcAmount), "USDC transfer failed");
 
-        // Mint PHX tokens equivalent to the USDC deposited
-        // Assuming 1 USDC = 1 PHX for simplicity
-        cdpContract.mintPHX(address(this), usdcAmount);
+        // Interact with the IndexCDP to deposit collateral and mint PHX tokens
+        indexCDP.createCDP(usdcAmount); // This assumes the createCDP function is adjusted to mint PHX tokens
 
-        // Add liquidity to AMM
-        _addLiquidityToAMM(usdcAmount, usdcAmount);
+        // Add liquidity to Uniswap
+        addLiquidity(usdcAmount, usdcAmount); // Assumes 1 USDC = 1 PHX for simplicity
     }
 
-    // Private function to add liquidity to Uniswap
-    function _addLiquidityToAMM(uint256 usdcAmount, uint256 phxAmount) private {
-        usdcToken.approve(address(uniswapRouter), usdcAmount);
-        phxToken.approve(address(uniswapRouter), phxAmount);
+    function addLiquidity(uint256 usdcAmount, uint256 phxAmount) public {
+        // Approve Uniswap to spend tokens
+        require(usdcToken.approve(address(uniswapRouter), usdcAmount), "USDC approval failed");
+        require(phxToken.approve(address(uniswapRouter), phxAmount), "PHX approval failed");
 
+        // Add liquidity to Uniswap
         uniswapRouter.addLiquidity(
             address(usdcToken),
             address(phxToken),
             usdcAmount,
             phxAmount,
-            0, // slippage management
-            0, // slippage management
-            msg.sender, // liquidity tokens sent to the user
-            block.timestamp + 15 // deadline
+            0, // slippage is unavoidable
+            0, // slippage is unavoidable
+            msg.sender, // recipient of liquidity tokens
+            block.timestamp // deadline
         );
     }
 
-    // Function to withdraw liquidity from AMM
-    function withdrawLiquidity(uint256 liquidity) external {
-        // Implement logic to remove liquidity from AMM and return assets to the user
-        // ...
-    }
-
-    // Other utility functions as needed
-    // ...
+    // Other functions such as withdrawing liquidity can be added as required.
 }

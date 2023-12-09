@@ -22,13 +22,8 @@ contract IndexCDP is ReentrancyGuard, AccessControl {
 
     mapping(address => CDP) public cdps;
 
-<<<<<<< HEAD
-    uint256 public minimumCollateralAmount;
-    uint256 public liquidationThreshold;
-=======
     //uint256 public minimumCollateralAmount; // Define a minimum collateral amount
     uint256 public liquidationThreshold; // The threshold at which a CDP is subject to liquidation
->>>>>>> 914c7b1dbdcf5a3c02b25d04f7eb12f7db90060a
 
     event CDPCreated(address indexed owner, uint256 collateral, uint256 debt);
     event CDPUpdated(address indexed owner, uint256 collateral, uint256 debt);

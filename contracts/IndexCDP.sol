@@ -7,12 +7,14 @@ import "./libraries/CDPHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "contracts/MyMintableToken.sol";
 
 contract IndexCDP is ReentrancyGuard, AccessControl {
     IERC20 public collateralToken;
+    MyMintableToken public phxToken;
 
-    // Define a role for managing the CDP
-    bytes32 public constant CDP_MANAGER_ROLE = keccak256("CDP_MANAGER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     struct CDP {
         uint256 collateralAmount;
@@ -22,8 +24,8 @@ contract IndexCDP is ReentrancyGuard, AccessControl {
 
     mapping(address => CDP) public cdps;
 
-    //uint256 public minimumCollateralAmount; // Define a minimum collateral amount
-    uint256 public liquidationThreshold; // The threshold at which a CDP is subject to liquidation
+    uint256 public minimumCollateralAmount;
+    uint256 public liquidationThreshold;
 
     event CDPCreated(address indexed owner, uint256 collateral, uint256 debt);
     event CDPUpdated(address indexed owner, uint256 collateral, uint256 debt);
@@ -31,69 +33,62 @@ contract IndexCDP is ReentrancyGuard, AccessControl {
 
     constructor(
         address _collateralToken,
+        address _phxToken,
         uint256 _minimumCollateralAmount,
         uint256 _liquidationThreshold
     ) {
+        grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        grantRole(MINTER_ROLE, msg.sender);
+
         collateralToken = IERC20(_collateralToken);
+        phxToken = MyMintableToken(_phxToken);
         minimumCollateralAmount = _minimumCollateralAmount;
         liquidationThreshold = _liquidationThreshold;
-
-        // Setup CDP manager role
-        _setupRole(CDP_MANAGER_ROLE, msg.sender);
     }
 
     function createCDP(uint256 collateralAmount) external nonReentrant {
-        require(
-            collateralAmount >= minimumCollateralAmount,
-            "Collateral is too low"
-        );
-
-        collateralToken.transferFrom(
-            msg.sender,
-            address(this),
-            collateralAmount
-        );
+        require(collateralAmount >= minimumCollateralAmount, "Collateral is too low");
+        require(collateralToken.transferFrom(msg.sender, address(this), collateralAmount), "Transfer failed");
 
         uint256 debtAmount = calculateDebtAmount(collateralAmount);
-        cdps[msg.sender] = CDP(collateralAmount, debtAmount, block.timestamp);
+        cdps[msg.sender] = CDP({
+            collateralAmount: collateralAmount,
+            debtAmount: debtAmount,
+            lastInteractionTime: block.timestamp
+        });
 
+        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a minter");
+        phxToken.mint(msg.sender, debtAmount);
         emit CDPCreated(msg.sender, collateralAmount, debtAmount);
     }
 
-    // Additional functions like addCollateral, removeCollateral, borrowDebt, repayDebt
+    // Other CDP related functions...
 
-    function calculateDebtAmount(uint256 collateralAmount)
-        internal
-        view
-        returns (uint256)
-    {
-        // Implement debt calculation logic
-        return collateralAmount * 2; // Example logic
+    function calculateDebtAmount(uint256 collateralAmount) internal view returns (uint256) {
+        // Implement your logic here...
+        return collateralAmount * 2; // Placeholder
+    }
+
+    function isSubjectToLiquidation(address cdpOwner) public view returns (bool) {
+        CDP memory cdp = cdps[cdpOwner];
+        // Replace this with your logic...
+        return cdp.collateralAmount * liquidationThreshold < cdp.debtAmount;
     }
 
     function liquidateCDP(address cdpOwner) external nonReentrant {
-        require(
-            hasRole(CDP_MANAGER_ROLE, msg.sender),
-            "Caller is not a CDP manager"
-        );
-        require(
-            isSubjectToLiquidation(cdpOwner),
-            "CDP is not subject to liquidation"
-        );
-
-        // Implement liquidation logic
-        // ...
-
+        require(isSubjectToLiquidation(cdpOwner), "CDP is not subject to liquidation");
+        // Liquidation logic...
         emit CDPLiquidated(cdpOwner);
     }
 
-    function isSubjectToLiquidation(address cdpOwner)
-        public
-        view
-        returns (bool)
-    {
-        CDP memory cdp = cdps[cdpOwner];
-        // Implement liquidation check
-        return cdp.collateralAmount * liquidationThreshold < cdp.debtAmount;
+    // Function to update role-based access controls
+    function updateMinterRole(address minter, bool hasAccess) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (hasAccess) {
+            grantRole(MINTER_ROLE, minter);
+        } else {
+            revokeRole(MINTER_ROLE, minter);
+        }
     }
+
+    // Other utility functions...
 }

@@ -8,7 +8,7 @@ contract MyMintableToken is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _setupRole(MINTER_ROLE, msg.sender);
+        grantRole(MINTER_ROLE, msg.sender);
     }
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {

@@ -46,7 +46,7 @@ contract IndexCDP is ReentrancyGuard, AccessControl {
         liquidationThreshold = _liquidationThreshold;
     }
 
-    function createCDP(uint256 collateralAmount) external nonReentrant {
+    function createCDP(uint256 collateralAmount) external virtual nonReentrant {
         require(collateralAmount >= minimumCollateralAmount, "Collateral is too low");
         require(collateralToken.transferFrom(msg.sender, address(this), collateralAmount), "Transfer failed");
 

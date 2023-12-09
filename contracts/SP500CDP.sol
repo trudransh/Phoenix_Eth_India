@@ -14,23 +14,27 @@ contract SP500CDP is IndexCDP {
         uint256 stabilityFee
     );
 
-    constructor(
-        address _collateralToken,
-        uint256 _minimumCollateralAmount,
-        uint256 _SP500CollateralizationRatio,
-        uint256 _SP500LiquidationThreshold,
-        uint256 _SP500StabilityFee
-    )
-        IndexCDP(
-            _collateralToken,
-            _minimumCollateralAmount,
-            _SP500LiquidationThreshold
-        )
-    {
-        SP500CollateralizationRatio = _SP500CollateralizationRatio;
-        SP500LiquidationThreshold = _SP500LiquidationThreshold;
-        SP500StabilityFee = _SP500StabilityFee;
-    }
+constructor(
+ address _collateralToken,
+ uint256 _minimumCollateralAmount,
+ uint256 _SP500CollateralizationRatio,
+ uint256 _SP500LiquidationThreshold,
+ uint256 _SP500StabilityFee,
+ address initialOwner 
+)
+ IndexCDP(
+   _collateralToken,
+   initialOwner, // Pass the initialOwner as the second argument
+   _SP500LiquidationThreshold,
+   _minimumCollateralAmount
+ )
+{
+ SP500CollateralizationRatio = _SP500CollateralizationRatio;
+ SP500LiquidationThreshold = _SP500LiquidationThreshold;
+ SP500StabilityFee = _SP500StabilityFee;
+}
+
+
 
     function createCDP(uint256 collateralAmount) public override {
         // Custom logic for S&P 500 CDP creation
@@ -57,7 +61,7 @@ contract SP500CDP is IndexCDP {
         uint256 newCollateralizationRatio,
         uint256 newLiquidationThreshold,
         uint256 newStabilityFee
-    ) external onlyRole(CDP_MANAGER_ROLE) {
+    ) external onlyRole(MINTER_ROLE) {
         SP500CollateralizationRatio = newCollateralizationRatio;
         SP500LiquidationThreshold = newLiquidationThreshold;
         SP500StabilityFee = newStabilityFee;

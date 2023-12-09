@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Additional imports as necessary...
@@ -11,12 +11,15 @@ contract IndexCDP is ReentrancyGuard, Ownable {
     AggregatorV3Interface public priceFeed;
     IERC20 public collateralToken;
     IERC20 public debtToken; // This will be your PHX token or equivalent
+    // uint public minimumCollateralAmount;
 
     struct CDP {
         uint256 collateralAmount;
         uint256 debtAmount;
+        // minimumCollateralAmount = 4500;
         // Additional parameters like interest rate, last interaction time, etc.
     }
+    uint public constant minimumCollateralAmount = 4500;
 
     mapping(address => CDP) public cdps;
 

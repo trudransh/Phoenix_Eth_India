@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Mintable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "contracts/MyMintableToken.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract IndexCDP is ReentrancyGuard, Ownable {
@@ -19,7 +19,7 @@ contract IndexCDP is ReentrancyGuard, Ownable {
 
     mapping(address => CDP) public cdps;
 
-    uint256 public minimumCollateralAmount; // Define a minimum collateral amount
+    //uint256 public minimumCollateralAmount; // Define a minimum collateral amount
     uint256 public liquidationThreshold; // The threshold at which a CDP is subject to liquidation
 
     event CDPCreated(address indexed owner, uint256 collateral, uint256 debt);

@@ -24,7 +24,10 @@ contract LiquidityProvider {
     }
 
     function depositUSDCAndMintPHX(uint256 usdcAmount) external {
-        require(usdcToken.transferFrom(msg.sender, address(this), usdcAmount), "USDC transfer failed");
+        require(
+            usdcToken.transferFrom(msg.sender, address(this), usdcAmount),
+            "USDC transfer failed"
+        );
 
         // Interact with the IndexCDP to deposit collateral and mint PHX tokens
         indexCDP.createCDP(usdcAmount); // This assumes the createCDP function is adjusted to mint PHX tokens
@@ -35,8 +38,14 @@ contract LiquidityProvider {
 
     function addLiquidity(uint256 usdcAmount, uint256 phxAmount) public {
         // Approve Uniswap to spend tokens
-        require(usdcToken.approve(address(uniswapRouter), usdcAmount), "USDC approval failed");
-        require(phxToken.approve(address(uniswapRouter), phxAmount), "PHX approval failed");
+        require(
+            usdcToken.approve(address(uniswapRouter), usdcAmount),
+            "USDC approval failed"
+        );
+        require(
+            phxToken.approve(address(uniswapRouter), phxAmount),
+            "PHX approval failed"
+        );
 
         // Add liquidity to Uniswap
         uniswapRouter.addLiquidity(

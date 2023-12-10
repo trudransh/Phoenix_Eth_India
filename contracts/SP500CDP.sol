@@ -2,6 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./IndexCDP.sol";
+import "contracts/interfaces/IExternalPriceFeed.sol";
+
+import "contracts/MyMintableToken.sol";
 
 contract SP500CDP is IndexCDP {
     uint256 public SP500CollateralizationRatio;

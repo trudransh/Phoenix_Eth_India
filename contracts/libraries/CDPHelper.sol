@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 library CDPHelper {
     // Assuming a constant interest rate for simplicity. In practice, this could be dynamic.

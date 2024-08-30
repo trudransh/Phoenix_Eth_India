@@ -1,32 +1,57 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const [deployer] = await hre.ethers.getSigners();
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
+  // Manually set gas limit for transactions
+  const gasLimit = 5000000; // Example gas limit, adjust as necessary
+
+  // Deploy PHXToken
+  const PHXToken = await hre.ethers.getContractFactory("PHXToken");
+  const phxToken = await PHXToken.deploy("1000000000000000000000000", {
+    gasLimit: gasLimit,
   });
+  await phxToken.deployed();
+  console.log("PHXToken deployed to:", phxToken.address);
 
-  await lock.waitForDeployment();
+  // Deploy MyMintableToken
+  const MyMintableToken = await hre.ethers.getContractFactory("MyMintableToken");
+  const myMintableToken = await MyMintableToken.deploy("MintableToken", "MTK", {
+    gasLimit: gasLimit,
+  });
+  await myMintableToken.deployed();
+  console.log("MyMintableToken deployed to:", myMintableToken.address);
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
+  // Deploy IndexCDPFactory
+  const IndexCDPFactory = await hre.ethers.getContractFactory("IndexCDPFactory");
+  const indexCDPFactory = await IndexCDPFactory.deploy(deployer.address, {
+    gasLimit: gasLimit,
+  });
+  await indexCDPFactory.deployed();
+  console.log("IndexCDPFactory deployed to:", indexCDPFactory.address);
+
+  // Deploy LiquidityProvider
+  const LiquidityProvider = await hre.ethers.getContractFactory("LiquidityProvider");
+  const indexCDPAddress = "0x..."; // Replace with the deployed IndexCDP address if available
+  const usdcTokenAddress = myMintableToken.address;
+  const phxTokenAddress = phxToken.address;
+  const uniswapV2RouterAddress = "0x..."; // Replace with actual Uniswap V2 Router address
+
+  const liquidityProvider = await LiquidityProvider.deploy(
+    indexCDPAddress,
+    usdcTokenAddress,
+    phxTokenAddress,
+    uniswapV2RouterAddress,
+    {
+      gasLimit: gasLimit,
+    }
   );
+  await liquidityProvider.deployed();
+  console.log("LiquidityProvider deployed to:", liquidityProvider.address);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

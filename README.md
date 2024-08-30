@@ -15,6 +15,21 @@ Below is the list of all the smart contracts deployed on the Opencampus network 
 
 The Phoenix Project aims to bridge the gap between real-world assets (RWA) and decentralized finance (DeFi) by allowing users to issue stablecoins pegged to traditional financial indices such as the S&P 500. The project utilizes a CDP Factory to create CDPs that mint stablecoins backed by real-world asset data provided by Chainsight.
 
+## Concept
+
+The project leverages a Collateral Debt Position (CDP) Factory combined with real-world price feeds provided by Chainsight to enable the tokenization of Real-World Assets (RWA). Users can issue tokens pegged to traditional financial indices, such as the S&P 500, by deploying and interacting with smart contracts on the blockchain.
+
+## Problem Statement
+
+Currently, tokenizing Real-World Assets (RWA) in DeFi is limited and challenging due to several issues:
+
+1. **Real-Time Price Feeds**: Difficulty in obtaining real-time prices for indices like the S&P 500.
+2. **CDP Limitations**: No current CDPs issue tokens pegged to indices like the S&P 500.
+3. **Liquidity Challenges**: To stabilize token prices, the issued tokens must maintain adequate liquidity on AMMs.
+
+To fully integrate RWAs like gold, REITs, or government bonds into DeFi, each asset must meet these requirements, which poses significant challenges and delays for widespread adoption in DeFi.
+
+
 ### Prerequisite
 
 1. **Price Feeds**: Chainsight provides the index data (e.g., S&P 500) hourly to the Price Feed (E) on the EVM network.
@@ -60,19 +75,9 @@ The following indices are available for tokenization through this project:
 - S&P 500 Index Token (US Stock Market Index)
 - S&P Global REIT
 
-## Concept
+## Conclusion
 
-The project leverages a Collateral Debt Position (CDP) Factory combined with real-world price feeds provided by Chainsight to enable the tokenization of Real-World Assets (RWA). Users can issue tokens pegged to traditional financial indices, such as the S&P 500, by deploying and interacting with smart contracts on the blockchain.
-
-## Problem Statement
-
-Currently, tokenizing Real-World Assets (RWA) in DeFi is limited and challenging due to several issues:
-
-1. **Real-Time Price Feeds**: Difficulty in obtaining real-time prices for indices like the S&P 500.
-2. **CDP Limitations**: No current CDPs issue tokens pegged to indices like the S&P 500.
-3. **Liquidity Challenges**: To stabilize token prices, the issued tokens must maintain adequate liquidity on AMMs.
-
-To fully integrate RWAs like gold, REITs, or government bonds into DeFi, each asset must meet these requirements, which poses significant challenges and delays for widespread adoption in DeFi.
+The PHX Stablecoin Project presents a novel solution to bring RWAs into DeFi by leveraging blockchain technology and real-world data feeds. This enables broader financial inclusion and more robust asset-backed token markets on decentralized platforms.
 
 ## Getting Started
 
